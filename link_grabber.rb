@@ -1,44 +1,37 @@
 class LinkGrabber
-  def initialize(directory, filter="")
-    @filter = filter
+  def initialize(directory)
     @files = Dir.entries(directory).select! { |file| file.end_with?(".html") }
+    @processed_urls = []
   end
 
   def run
-    File.open("copy_these_contents", "w") do |f|
-      output = ""
-      
-      @files.each do |file|
-        urls = read(file)
+    @files.each do |file|
+      urls = get_urls(file)
 
-        urls.each do |url|
-          if url
-            file_path = "links/" + url.split("/")[2..-1].join("/")
-            folder_path = "links/" + url.split("/")[2..-2].join("/")
-            next_line = "mkdir -p " + folder_path + " && wget -O " + file_path + " " + url + "\r"
-
-            if !output.include?(next_line)
-              output += next_line
-            end
-          end
+      urls.each do |url|
+        if url
+          process_url(url) if !@processed_urls.include?(url)
         end
       end
-
-      f.write(output)
     end
   end
 
-  def read(file)
+  def process_url(url)
+    file_path = "links/" + url.split("/")[2..-1].join("/")
+    folder_path = "links/" + url.split("/")[2...-1].join("/")
+
+    `mkdir -p #{folder_path} && wget -O #{file_path} #{url}`
+
+    @processed_urls << url
+  end
+
+  def get_urls(file)
     urls = []
 
     File.open(file) do |f|
       f.each_line do |line|
         line.split(" ").each do |word|
-          if word.start_with?("href")
-            if word.include?(@filter)
-              urls << word.split('"')[1]
-            end
-          end
+          urls << word.split('"')[1] if word.start_with?("href")
         end
       end
     end
