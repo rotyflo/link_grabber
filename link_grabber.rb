@@ -7,7 +7,11 @@ class LinkGrabber
     @files.each do |file|
       urls = get_urls(file)
 
-      urls.each { |url| process_url(url) if url }
+      urls.each do |url|
+        if url
+          process_url(url) if url.start_with?("http")
+        end
+      end
     end
   end
 
