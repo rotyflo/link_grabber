@@ -1,18 +1,13 @@
 class LinkGrabber
   def initialize(directory)
     @files = Dir.entries(directory).select! { |file| file.end_with?(".html") }
-    @processed_urls = []
   end
 
   def run
     @files.each do |file|
       urls = get_urls(file)
 
-      urls.each do |url|
-        if url
-          process_url(url) if !@processed_urls.include?(url)
-        end
-      end
+      urls.each { |url| process_url(url) if url }
     end
   end
 
@@ -20,9 +15,7 @@ class LinkGrabber
     file_path = "links/" + url.split("/")[2..-1].join("/")
     folder_path = "links/" + url.split("/")[2...-1].join("/")
 
-    `mkdir -p #{folder_path} && wget -O #{file_path} #{url}`
-
-    @processed_urls << url
+    `mkdir -p #{folder_path} && wget --timeout=20 --tries=3 -nc -O #{file_path} #{url}`
   end
 
   def get_urls(file)
